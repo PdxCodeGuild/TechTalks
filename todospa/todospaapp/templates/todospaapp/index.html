@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo SPA</title>
+
+    <!-- Bootstrap -->
+    <!-- https://getbootstrap.com/docs/5.0/getting-started/introduction/ -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.min.js"
+        integrity="sha384-pQQkAEnwaBkjpqZ8RU1fF1AKtTcHJwFl3pblpTlHXybJjHpMYo79HY3hIi4NKxyj"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"
+        integrity="sha384-q2kxQ16AaE6UbzuKqyBE9/u/KzioAlnx2maXQHiDX9d4/zp8Ok3f+M7DPm+Ib6IU"
+        crossorigin="anonymous"></script>
+
+    <!-- Vue -->
+    <!-- https://vuejs.org/v2/guide/ -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+
+    <!-- Axios -->
+    <!-- https://github.com/axios/axios -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.0/axios.min.js"
+        integrity="sha512-DZqqY3PiOvTP9HkjIWgjO6ouCbq+dxqWoJZ/Q+zPYNHmlnI2dQnbJ5bxAHpAMw+LXRm4D72EIRXzvcHQtE8/VQ=="
+        crossorigin="anonymous"></script>
+
+    <!-- Moment -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"
+        integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ=="
+        crossorigin="anonymous"></script>
+
+    <style>
+        #app {
+            max-width:800px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app" class="container">
+        <h1>Todo SPA</h1>
+        <hr/>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-9">
+                    <label for="input_todo" class="form-label">Todo Item</label>
+                    <input type="text" id="input_todo" class="form-control" v-model="input_todo">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label><br/>
+                    <a class="btn btn-primary" v-on:click="saveTodo">Create Todo</a>
+                </div>
+            </div>
+        </div>
+        <br/><br/>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th scope="col">id</th>
+                    <th scope="col">text</th>
+                    <th scope="col">date created</th>
+                    <th scope="col">date completed</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="todo in todos">
+                    <th scope="row">[[todo.id]]</th>
+                    <td>[[todo.text]]</td>
+                    <td>[[todo.date_created | formatDate]]</td>
+                    <td>[[todo.date_completed | formatDate]]</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <script>
+        let app = new Vue({
+            el: '#app',
+            delimiters: ['[[', ']]'],
+            data: {
+                todos: [],
+                input_todo: ''
+            },
+            methods: {
+                getTodos: function() {
+                    axios({
+                        url: "{% url 'todospaapp:todos' %}",
+                        method: 'get'
+                    }).then(response => {
+                        // console.log(response.data)
+                        // this.todos = response.data.todo_items
+                        this.todos = []
+                        let data = response.data.todo_items
+                        for (let i = 0; i < data.length; ++i) {
+                            let date_completed = null
+                            if (data[i].date_completed != null) {
+                                date_completed = new Date(data[i].date_completed)
+                            }
+                            this.todos.push({
+                                id: data[i].id,
+                                text: data[i].text,
+                                date_created: new Date(data[i].date_created),
+                                date_completed: date_completed
+                            })
+                        }
+                        // console.log(this.todos)
+                    })
+                },
+                saveTodo: function() {
+                    axios({
+                        url: "{% url 'todospaapp:save_todo' %}",
+                        method: 'post',
+                        data: {
+                            todo_text: this.input_todo
+                        },
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        }
+                    }).then(response => {
+                        // console.log(response.data)
+                        this.getTodos()
+                    })
+                }
+            },
+            created: function () {
+                this.getTodos()
+            },
+            filters: {
+                formatDate: function (value) {
+                    if (value) {
+                        return moment(String(value)).format('MM/DD hh:mm')
+                    }
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>
