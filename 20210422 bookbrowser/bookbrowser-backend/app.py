@@ -10,6 +10,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite3'
 db = SQLAlchemy(app)
 
 
+
 class Book(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
@@ -55,7 +56,7 @@ def books():
             'id': book.id,
             'title': book.title,
             'author': book.author,
-            'image': book.image,
+            'image': 'https://raw.githubusercontent.com/PdxCodeGuild/TechTalks/master/20210422%20bookbrowser/bookbrowser-backend/images/' + book.image,
         })
     return output
 
@@ -71,7 +72,7 @@ def book_detail(book_id):
         'country': book.country,
         'year': book.year,
         'pages': book.pages,
-        'image': book.image,
+        'image': 'https://raw.githubusercontent.com/PdxCodeGuild/TechTalks/master/20210422%20bookbrowser/bookbrowser-backend/images/' + book.image,
         'url': book.url
     }
     return book
@@ -89,6 +90,14 @@ def reset():
         db.session.add(book)
     db.session.commit()
     return 'success'
-    
+
+
+
+@app.after_request
+def add_headers(response):
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
+
+
 app.run(debug=True)
 
